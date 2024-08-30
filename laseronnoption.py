@@ -18,7 +18,7 @@ def connect_to_device(ip, port):
     return sock
 
 # IP and port configuration
-device_ip = "10.91.11.80"
+device_ip = "10.91.11.51"
 
 # Common commands that should always execute
 common_commands = [
@@ -96,14 +96,14 @@ def handle_port_8002_testing():
 # Function to handle direct testing
 def handle_direct_testing():
     print("Select the application for Direct Testing on port 8002:")
-    print("1. TermEth400GL2TrafficwOtherRate")
+    print("1. TermEth10GL2Traffic")
     print("2. TermEth100GL2Traffic")
     app_choice = input("Enter the number of the application (or 'exit' to quit): ")
 
     if app_choice == "1":
         specific_commands = [
-            ":SYST:APPL:LAUNch TermEth400GL2TrafficwOtherRate 2",
-            ":SYST:APPL:SEL TermEth400GL2TrafficwOtherRate_102",
+            ":SYST:APPL:LAUNch TermEth10GL2Traffic 2",
+            ":SYST:APPL:SEL TermEth10GL2Traffic_102",
             ":SESS:CRE",
             ":SESS:STAR",
             ":SENSE:TEST:ENABLE OFF",  # Disable timed testing
@@ -134,16 +134,17 @@ def handle_direct_testing():
 # Function to handle timed testing
 def handle_timed_testing():
     print("Select the application for Timed Testing on port 8002:")
-    print("1. TermEth400GL2TrafficwOtherRate")
+    print("1. TermEth10GL2Traffic")
     print("2. TermEth100GL2Traffic")
     app_choice = input("Enter the number of the application (or 'exit' to quit): ")
 
     if app_choice == "1":
         specific_commands = [
-            ":SYST:APPL:LAUNch TermEth400GL2TrafficwOtherRate 2",
-            ":SYST:APPL:SEL TermEth400GL2TrafficwOtherRate_102",
+            ":SYST:APPL:LAUNch TermEth10GL2Traffic 2",
+            ":SYST:APPL:SEL TermEth10GL2Traffic_102",
             ":SESS:CRE",
             ":SESS:STAR",
+            ":INPUT:INTERFACE:TYPE QSFP1", #CPF41
             ":SENSE:TEST:ENABLE ON",  # Enable timed testing
             ":SENSE:TEST:DURATION 100MIN",
         ]
@@ -154,7 +155,7 @@ def handle_timed_testing():
             ":SYST:APPL:SEL TermEth100GL2Traffic_101",
             ":SESS:CRE",
             ":SESS:STAR",
-            ":INPUT:INTERFACE:TYPE CFP41",
+            ":INPUT:INTERFACE:TYPE QSFP1", # CFP41
             ":SENSE:TEST:ENABLE ON",  # Enable timed testing
             ":SENSE:TEST:DURATION 100MIN",
         ]
@@ -197,7 +198,7 @@ def handle_laser_and_traffic_options():
 # Function to exit an application
 def exit_application():
     print("Which application would you like to exit?")
-    print("1. TermEth400GL2TrafficwOtherRate")
+    print("1. TermEth10GL2Traffic")
     print("2. TermEth100GL2Traffic")
     exit_choice = input("Enter the number of the application to exit (or 'exit' to quit): ")
 

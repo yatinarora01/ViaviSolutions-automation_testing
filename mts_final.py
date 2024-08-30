@@ -18,14 +18,14 @@ def connect_to_device(ip, port):
     return sock
 
 # IP and port configuration
-device_ip = "10.91.11.80"
+device_ip = "10.91.11.51"
 
-# Common commands that should always execute
+# Common commands that should always execute on port 8002
 common_commands = [
     "*REM VISIBLE FULL",
     "*IDN?",
-    ":SOURCE:MAC:ETH:PAYLOAD BERT",
-    ":SOURCE:MAC:ETH:PAYLOAD?",
+    ":SESS:CRE",
+    ":SESS:STAR",
 ]
 
 # Mapping of commands to ports
@@ -41,7 +41,7 @@ command_port_mapping = {
         "*IDN?",
         ":SYST:FUNC:PORT? BOTH,BASE,\"BERT\"",
     ],
-    8002: []
+    8002: []  # To be filled dynamically based on user selection
 }
 
 # Function to execute commands for a given port
@@ -93,30 +93,35 @@ def handle_port_8002_testing():
         else:
             print("Invalid selection. Please try again.")
 
+# Function to turn on laser and start traffic
+def turn_on_laser_and_traffic():
+    return [
+        ":OUTPUT:OPTIC ON",  # Turn on laser
+        ":SOURCE:MAC:ETH:PAYLOAD BERT",  # Set Payload
+        ":SOURCE:MAC:ETH:PAYLOAD?",  # Confirm Payload
+        ":SOURCE:MAC:TRAFFIC ON",  # Start Traffic
+        ":ABOR",
+        ":INIT",
+    ]
+
 # Function to handle direct testing
 def handle_direct_testing():
     print("Select the application for Direct Testing on port 8002:")
-    print("1. TermEth400GL2TrafficwOtherRate")
+    print("1. TermEth10GL2Traffic")
     print("2. TermEth100GL2Traffic")
     app_choice = input("Enter the number of the application (or 'exit' to quit): ")
 
     if app_choice == "1":
         specific_commands = [
-            ":SYST:APPL:LAUNch TermEth400GL2TrafficwOtherRate 2",
-            ":SYST:APPL:SEL TermEth400GL2TrafficwOtherRate_102",
-            ":SESS:CRE",
-            ":SESS:STAR",
-            ":SENSE:TEST:ENABLE OFF",  # Disable timed testing
-        ]
+            ":SYST:APPL:LAUNch TermEth10GL2Traffic 2",
+            ":SYST:APPL:SEL TermEth10GL2Traffic_102",
+        ] + turn_on_laser_and_traffic()
 
     elif app_choice == "2":
         specific_commands = [
             ":SYST:APPL:LAUNch TermEth100GL2Traffic 1",
             ":SYST:APPL:SEL TermEth100GL2Traffic_101",
-            ":SESS:CRE",
-            ":SESS:STAR",
-            ":SENSE:TEST:ENABLE OFF",  # Disable timed testing
-        ]
+        ] + turn_on_laser_and_traffic()
 
     elif app_choice.lower() == "exit":
         print("Exiting Direct Testing.")
@@ -126,38 +131,31 @@ def handle_direct_testing():
         print("Invalid application selection. Exiting Direct Testing.")
         return
 
+    # Set up for direct testing
+    setup_commands = [":SENSE:TEST:ENABLE OFF"]
+
     # Always execute common commands first
-    command_port_mapping[8002] = common_commands + specific_commands
-    handle_laser_and_traffic_options()
+    command_port_mapping[8002] = common_commands + specific_commands + setup_commands
     execute_commands_for_port(8002)
 
 # Function to handle timed testing
 def handle_timed_testing():
     print("Select the application for Timed Testing on port 8002:")
-    print("1. TermEth400GL2TrafficwOtherRate")
+    print("1. TermEth10GL2Traffic")
     print("2. TermEth100GL2Traffic")
     app_choice = input("Enter the number of the application (or 'exit' to quit): ")
 
     if app_choice == "1":
         specific_commands = [
-            ":SYST:APPL:LAUNch TermEth400GL2TrafficwOtherRate 2",
-            ":SYST:APPL:SEL TermEth400GL2TrafficwOtherRate_102",
-            ":SESS:CRE",
-            ":SESS:STAR",
-            ":SENSE:TEST:ENABLE ON",  # Enable timed testing
-            ":SENSE:TEST:DURATION 100MIN",
-        ]
+            ":SYST:APPL:LAUNch TermEth10GL2Traffic 2",
+            ":SYST:APPL:SEL TermEth10GL2Traffic_102",
+        ] + turn_on_laser_and_traffic()
 
     elif app_choice == "2":
         specific_commands = [
             ":SYST:APPL:LAUNch TermEth100GL2Traffic 1",
             ":SYST:APPL:SEL TermEth100GL2Traffic_101",
-            ":SESS:CRE",
-            ":SESS:STAR",
-            ":INPUT:INTERFACE:TYPE CFP41",
-            ":SENSE:TEST:ENABLE ON",  # Enable timed testing
-            ":SENSE:TEST:DURATION 100MIN",
-        ]
+        ] + turn_on_laser_and_traffic()
 
     elif app_choice.lower() == "exit":
         print("Exiting Timed Testing.")
@@ -167,42 +165,26 @@ def handle_timed_testing():
         print("Invalid application selection. Exiting Timed Testing.")
         return
 
+    # Set up for timed testing
+    setup_commands = [
+                      ":SENSE:TEST:ENABLE ON",  # Enable timed testing at the end
+        ":SENSE:TEST:DURATION 100MIN",
+        
+    ]
+
     # Always execute common commands first
-    command_port_mapping[8002] = common_commands + specific_commands
-    handle_laser_and_traffic_options()
+    command_port_mapping[8002] = common_commands + specific_commands + setup_commands
     execute_commands_for_port(8002)
-
-# Function to handle options for laser and traffic
-def handle_laser_and_traffic_options():
-    laser_command = ":OUTPUT:OPTIC ON" if input("Turn on laser? (yes/no): ").lower() == "yes" else ""
-    traffic_command = ":SOURCE:MAC:TRAFFIC ON" if input("Turn on traffic? (yes/no): ").lower() == "yes" else ""
-
-    # Append commands if user chooses to turn on laser and traffic
-    if laser_command:
-        command_port_mapping[8002].append(laser_command)
-    if traffic_command:
-        command_port_mapping[8002].append(traffic_command)
-
-    # Always append session end and error check commands
-    command_port_mapping[8002].extend([
-        ":SENS:DATA? ECOUNT:PAYLOAD:BERT:TSE",
-        ":SOURCE:PAYLOAD:BERT:TSE:TYPE?",
-        ":SOURCE:PAYLOAD:BERT:INSERT:TSE",
-        ":SENS:DATA? ECOUNT:PAYLOAD:BERT:TSE",
-        ":SENS:DATA? ERATE:PAYLOAD:BERT:TSE",
-        ":SESS:END",
-        ":SYST:ERR?",
-    ])
 
 # Function to exit an application
 def exit_application():
     print("Which application would you like to exit?")
-    print("1. TermEth400GL2TrafficwOtherRate")
+    print("1. TermEth10GL2Traffic")
     print("2. TermEth100GL2Traffic")
     exit_choice = input("Enter the number of the application to exit (or 'exit' to quit): ")
 
     if exit_choice == "1" or exit_choice == "2":
-        command_port_mapping[8002] = [":SESS:END", ":EXIT"]
+        command_port_mapping[8002] = [":EXIT"]
         execute_commands_for_port(8002)
 
     elif exit_choice.lower() == "exit":
